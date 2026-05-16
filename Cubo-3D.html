@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Cubo Mágico 3D </title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #111; overflow: hidden; }
+    canvas { display: block; }
+    #info {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 20px;
+      border-radius: 8px;
+      text-align: center;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">Pilares do Three.js e 1 Cubo Simples</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // pilar1; SCENE (Onde tudo existe) 
+    const scene = new THREE.Scene();
+
+    // pilar2; CAMERA (Como enxergamos a cena) 
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(2, 2, 5); 
+    camera.lookAt(0, 0, 0);       
+
+    // pilar3; RENDERER (Desenha a tela) 
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x111111);
+    document.body.appendChild(renderer.domElement);
+
+    
+    //  cubo basico (Geometry + Material = Mesh)
+    
+    const geometria = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true });
+    
+    const cuboSimples = new THREE.Mesh(geometria, material);
+    scene.add(cuboSimples); 
+
+    
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    
+    //Loop cubo girando 
+  
+    function animate() {
+      requestAnimationFrame(animate);
+
+      //Rotação contínua 
+      cuboSimples.rotation.x += 0.01;
+      cuboSimples.rotation.y += 0.01;
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
