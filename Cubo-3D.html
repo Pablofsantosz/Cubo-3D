@@ -51,6 +51,20 @@
     const cuboSimples = new THREE.Mesh(geometria, material);
     scene.add(cuboSimples); 
 
+    let alfa = 0;
+    let beta = 0;
+
+    document.addEventListener('keydown', (e) => {
+      switch (e.key) {
+        case 'ArrowRight': beta  -= 3; break;
+        case 'ArrowLeft':  beta  += 3; break;
+        case 'ArrowUp':    alfa  -= 3; break;
+        case 'ArrowDown':  alfa  += 3; break;
+      }
+    });
+
+    const toRad = THREE.MathUtils.degToRad;
+
     
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -65,8 +79,8 @@
       requestAnimationFrame(animate);
 
       //Rotação contínua 
-      cuboSimples.rotation.x += 0.01;
-      cuboSimples.rotation.y += 0.01;
+      cuboSimples.rotation.x = toRad(alfa);
+      cuboSimples.rotation.y = toRad(beta);
 
       renderer.render(scene, camera);
     }
