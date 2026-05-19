@@ -87,7 +87,7 @@
     let beta = 0;
 
     
-
+    //TODO: trocar isso por OrbitControls
     document.addEventListener('keydown', (e) => {
       switch (e.key) {
         case 'ArrowRight': beta  -= 3; break;
@@ -106,6 +106,99 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
+    //TODO: ajeitar movimento do cubo de acordo com o angulo
+
+    //Rastrear posição atual do mouse
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    window.addEventListener('click', onCubeClick);
+
+    function onCubeClick(event) {
+      // Convert mouse screen position to normalized device coordinates (-1 to +1)
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+
+      // Intersect against all small pieces inside your cuboMagico group
+      const intersects = raycaster.intersectObjects(cuboMagico.children);
+
+      if (intersects.length > 0) {
+        const targetPiece = intersects[0].object;
+        const normal = intersects[0].face.normal; // Shows which direction the face points
+
+        // Determine rotation axis based on the clicked outer face normal vector
+        let axis = 'y'; 
+        if (Math.abs(normal.x) > 0.9) axis = 'x';
+        if (Math.abs(normal.z) > 0.9) axis = 'z';
+
+        // Trigger the slice rotation sequence
+        rotateSlice(axis, targetPiece.position[axis]);
+      }
+    }
+
+    function rotateSlice(axis, layerValue) {
+      const tempGroup = new THREE.Group();
+      scene.add(tempGroup);
+
+      // Round the target layer coordinate to avoid floating-point math issues
+      const targetLayer = Math.round(layerValue * 100) / 100;
+
+      // 1. Gather all pieces on the chosen layer slice
+      const piecesToRotate = [];
+      cuboMagico.children.forEach(peca => {
+        const currentPos = Math.round(peca.position[axis] * 100) / 100;
+        if (currentPos === targetLayer) {
+          piecesToRotate.push(peca);
+        }
+      });
+
+      // 2. Attach pieces temporarily to our rotation pivot group
+      piecesToRotate.forEach(peca => {
+        tempGroup.attach(peca);
+      });
+
+      // 3. Animate the rotation (using a basic layout frame counter here)
+      let currentRotation = 0;
+      const targetRotation = Math.PI / 2; // 90 degrees in radians
+      const step = 0.05; // Control animation speed
+
+      function animateSlice() {
+        if (currentRotation < targetRotation) {
+          tempGroup.rotation[axis] += step;
+          currentRotation += step;
+          requestAnimationFrame(animateSlice);
+        } else {
+          // Snapping perfectly to 90 degrees at completion
+          tempGroup.rotation[axis] = targetRotation;
+
+          // 4. Clean up: Return pieces to the main object and delete temp group
+          const finishedPieces = [...tempGroup.children];
+          finishedPieces.forEach(peca => {
+            cuboMagico.attach(peca);
+          });
+
+          scene.remove(tempGroup);
+        }
+      }
+
+      animateSlice();
+    }
+
+    // Lembrar aonde o mouse clicou
+    var clickVector, clickFace;
+
+
+    // TODO: Movimento das peças
+    var filaMovimentos = [];
+    var movimentoAtual;
+    var isMoving = false;
+    var moveEixo;
+    var moveNumber;
+    var moveDirecao;
+    var velocidadeRotacao = 0.2;
+
     
     //Loop cubo girando 
   
@@ -118,6 +211,10 @@
       cuboMagico.rotation.y = toRad(beta);
 
       renderer.render(scene, camera);
+    }
+
+    function randomInt(min, max){
+      return Math.floor(Math.random() * (max - min + 1) + min);
     }
 
     animate();
