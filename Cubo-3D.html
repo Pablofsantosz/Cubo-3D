@@ -42,6 +42,10 @@
     renderer.setClearColor(0x111111);
     document.body.appendChild(renderer.domElement);
 
+    //Iluminação da cena
+    const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.6); 
+    scene.add(luzAmbiente);
+
     
     //  cubo basico (Geometry + Material = Mesh)
     
@@ -50,14 +54,30 @@
 
     // Diminuição do tamanho para ver a diff entre os cubos
     const geometria = new THREE.BoxGeometry(0.95, 0.95, 0.95);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true });
+    //const material = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true });
     
+    // Coloração dos cubinhos
+    var colours = [
+      0xC41E3A, // Vermelho
+      0x009E60, // Verde
+      0x0051BA, // Azul
+      0xFF5800, // Laranja
+      0xFFD500, // Amarelo
+      0xFFFFFF  // Branco
+    ];
+    
+    
+    var cubeMaterials = colours.map(function(c) {
+      return new THREE.MeshLambertMaterial({ color: c });
+    });
+
     //  grid 3x3x3
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
-          const peca = new THREE.Mesh(geometria, material);
-          peca.position.set(x, y, z);
+          const peca = new THREE.Mesh(geometria, cubeMaterials);
+          const espacamento = 1.05
+          peca.position.set(x * espacamento, y* espacamento, z* espacamento);
           cuboMagico.add(peca); 
         }
       }
@@ -65,6 +85,8 @@
 
     let alfa = 0;
     let beta = 0;
+
+    
 
     document.addEventListener('keydown', (e) => {
       switch (e.key) {
