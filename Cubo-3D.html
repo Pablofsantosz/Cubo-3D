@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Cubo Mágico 3D </title>
+  <title>Cubo Mágico 3D</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #111; overflow: hidden; }
@@ -24,128 +24,106 @@
   </style>
 </head>
 <body>
-  <div id="info">Pilares do Three.js e 1 Cubo Simples</div>
+  <div id="info">Cubo Mágico 3D - Clique nas fatias para girar</div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  
   <script>
-    // pilar1; SCENE (Onde tudo existe) 
-    const scene = new THREE.Scene();
+    let scene, camera, renderer, controls;
+    let cuboMagico;
+    let raycaster, mouse;
+    let isMoving = false;
 
-    // pilar2; CAMERA (Como enxergamos a cena) 
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(4, 4, 8); 
-    camera.lookAt(0, 0, 0);       
+    init();
+    animate();
 
-    // pilar3; RENDERER (Desenha a tela) 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x111111);
-    document.body.appendChild(renderer.domElement);
+    function init() {
+      scene = new THREE.Scene();
 
-    //Iluminação da cena
-    const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.6); 
-    scene.add(luzAmbiente);
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(4, 4, 8);
+      camera.lookAt(0, 0, 0);
 
-    
-    //  cubo basico (Geometry + Material = Mesh)
-    
-    const cuboMagico = new THREE.Group(); 
-    scene.add(cuboMagico);
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0x111111);
+      document.body.appendChild(renderer.domElement);
 
-    // Diminuição do tamanho para ver a diff entre os cubos
-    const geometria = new THREE.BoxGeometry(0.95, 0.95, 0.95);
-    //const material = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true });
-    
-    // Coloração dos cubinhos
-    var colours = [
-      0xC41E3A, // Vermelho
-      0x009E60, // Verde
-      0x0051BA, // Azul
-      0xFF5800, // Laranja
-      0xFFD500, // Amarelo
-      0xFFFFFF  // Branco
-    ];
-    
-    
-    var cubeMaterials = colours.map(function(c) {
-      return new THREE.MeshLambertMaterial({ color: c });
-    });
+      const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(luzAmbiente);
 
-    //  grid 3x3x3
-    for (let x = -1; x <= 1; x++) {
-      for (let y = -1; y <= 1; y++) {
-        for (let z = -1; z <= 1; z++) {
-          const peca = new THREE.Mesh(geometria, cubeMaterials);
-          const espacamento = 1.05
-          peca.position.set(x * espacamento, y* espacamento, z* espacamento);
-          cuboMagico.add(peca); 
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+
+      criarCuboMagico();
+
+      window.addEventListener('resize', onWindowResize);
+      window.addEventListener('click', onCubeClick);
+    }
+
+    function criarCuboMagico() {
+      cuboMagico = new THREE.Group();
+      scene.add(cuboMagico);
+
+      const geometria = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+      
+      const colours = [
+        0xC41E3A,
+        0xFF5800,
+        0xFFFFFF,
+        0xFFD500,
+        0x009E60,
+        0x0051BA
+      ];
+      
+      const cubeMaterials = colours.map(c => new THREE.MeshLambertMaterial({ color: c }));
+
+      const espacamento = 1.05;
+
+      for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+          for (let z = -1; z <= 1; z++) {
+            const peca = new THREE.Mesh(geometria, cubeMaterials);
+            peca.position.set(x * espacamento, y * espacamento, z * espacamento);
+            cuboMagico.add(peca);
+          }
         }
       }
     }
 
-    let alfa = 0;
-    let beta = 0;
-
-    
-    //TODO: trocar isso por OrbitControls
-    document.addEventListener('keydown', (e) => {
-      switch (e.key) {
-        case 'ArrowRight': beta  -= 3; break;
-        case 'ArrowLeft':  beta  += 3; break;
-        case 'ArrowUp':    alfa  -= 3; break;
-        case 'ArrowDown':  alfa  += 3; break;
-      }
-    });
-
-    const toRad = THREE.MathUtils.degToRad;
-
-    
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    //TODO: ajeitar movimento do cubo de acordo com o angulo
-
-    //Rastrear posição atual do mouse
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    window.addEventListener('click', onCubeClick);
-
     function onCubeClick(event) {
-      // Convert mouse screen position to normalized device coordinates (-1 to +1)
+      if (isMoving) return;
+
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
-
-      // Intersect against all small pieces inside your cuboMagico group
       const intersects = raycaster.intersectObjects(cuboMagico.children);
 
       if (intersects.length > 0) {
         const targetPiece = intersects[0].object;
-        const normal = intersects[0].face.normal; // Shows which direction the face points
+        const normal = intersects[0].face.normal; 
 
-        // Determine rotation axis based on the clicked outer face normal vector
         let axis = 'y'; 
         if (Math.abs(normal.x) > 0.9) axis = 'x';
         if (Math.abs(normal.z) > 0.9) axis = 'z';
 
-        // Trigger the slice rotation sequence
         rotateSlice(axis, targetPiece.position[axis]);
       }
     }
 
     function rotateSlice(axis, layerValue) {
+      isMoving = true;
       const tempGroup = new THREE.Group();
       scene.add(tempGroup);
 
-      // Round the target layer coordinate to avoid floating-point math issues
       const targetLayer = Math.round(layerValue * 100) / 100;
 
-      // 1. Gather all pieces on the chosen layer slice
       const piecesToRotate = [];
       cuboMagico.children.forEach(peca => {
         const currentPos = Math.round(peca.position[axis] * 100) / 100;
@@ -154,15 +132,13 @@
         }
       });
 
-      // 2. Attach pieces temporarily to our rotation pivot group
       piecesToRotate.forEach(peca => {
         tempGroup.attach(peca);
       });
 
-      // 3. Animate the rotation (using a basic layout frame counter here)
       let currentRotation = 0;
-      const targetRotation = Math.PI / 2; // 90 degrees in radians
-      const step = 0.05; // Control animation speed
+      const targetRotation = Math.PI / 2;
+      const step = 0.08;
 
       function animateSlice() {
         if (currentRotation < targetRotation) {
@@ -170,54 +146,32 @@
           currentRotation += step;
           requestAnimationFrame(animateSlice);
         } else {
-          // Snapping perfectly to 90 degrees at completion
           tempGroup.rotation[axis] = targetRotation;
 
-          // 4. Clean up: Return pieces to the main object and delete temp group
           const finishedPieces = [...tempGroup.children];
           finishedPieces.forEach(peca => {
             cuboMagico.attach(peca);
           });
 
           scene.remove(tempGroup);
+          isMoving = false;
         }
       }
 
       animateSlice();
     }
 
-    // Lembrar aonde o mouse clicou
-    var clickVector, clickFace;
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
 
-
-    // TODO: Movimento das peças
-    var filaMovimentos = [];
-    var movimentoAtual;
-    var isMoving = false;
-    var moveEixo;
-    var moveNumber;
-    var moveDirecao;
-    var velocidadeRotacao = 0.2;
-
-    
-    //Loop cubo girando 
-  
     function animate() {
       requestAnimationFrame(animate);
-
-      //Rotação contínua 
-      
-      cuboMagico.rotation.x = toRad(alfa);
-      cuboMagico.rotation.y = toRad(beta);
-
+      controls.update();
       renderer.render(scene, camera);
     }
-
-    function randomInt(min, max){
-      return Math.floor(Math.random() * (max - min + 1) + min);
-    }
-
-    animate();
   </script>
 </body>
 </html>
