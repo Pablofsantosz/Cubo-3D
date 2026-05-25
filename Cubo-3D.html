@@ -71,24 +71,31 @@
       scene.add(cuboMagico);
 
       const geometria = new THREE.BoxGeometry(0.95, 0.95, 0.95);
-      
-      const colours = [
-        0xC41E3A,
-        0xFF5800,
-        0xFFFFFF,
-        0xFFD500,
-        0x009E60,
-        0x0051BA
-      ];
-      
-      const cubeMaterials = colours.map(c => new THREE.MeshLambertMaterial({ color: c }));
-
       const espacamento = 1.05;
+
+      const matPreto = new THREE.MeshLambertMaterial({ color: 0x000000 });
+
+      const matDireita  = new THREE.MeshLambertMaterial({ color: 0xC41E3A }); 
+      const matEsquerda = new THREE.MeshLambertMaterial({ color: 0xFF5800 }); 
+      const matCima     = new THREE.MeshLambertMaterial({ color: 0xFFFFFF }); 
+      const matBaixo    = new THREE.MeshLambertMaterial({ color: 0xFFD500 }); 
+      const matFrente   = new THREE.MeshLambertMaterial({ color: 0x009E60 }); 
+      const matTras     = new THREE.MeshLambertMaterial({ color: 0x0051BA }); 
 
       for (let x = -1; x <= 1; x++) {
         for (let y = -1; y <= 1; y++) {
           for (let z = -1; z <= 1; z++) {
-            const peca = new THREE.Mesh(geometria, cubeMaterials);
+            
+            const materiaisPeca = [
+              x === 1 ? matDireita : matPreto,
+              x === -1 ? matEsquerda : matPreto,
+              y === 1 ? matCima : matPreto,
+              y === -1 ? matBaixo : matPreto,
+              z === 1 ? matFrente : matPreto,
+              z === -1 ? matTras : matPreto
+            ];
+
+            const peca = new THREE.Mesh(geometria, materiaisPeca);
             peca.position.set(x * espacamento, y * espacamento, z * espacamento);
             cuboMagico.add(peca);
           }
