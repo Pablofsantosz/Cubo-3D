@@ -3,7 +3,6 @@
 - Lucas Ribeiro d'Azevedo
 - Pablo Felipe
 - Pedro Alves
-- Vinicíus Mergulhão 
 - Vic Rocha 
 
 # Proposta do Projeto
