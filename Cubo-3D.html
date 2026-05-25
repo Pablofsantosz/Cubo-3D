@@ -119,7 +119,7 @@
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       
-      // PARÊNTESE CORRIGIDO NESSA LINHA ABAIXO:
+      
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
@@ -146,7 +146,6 @@
           eixoLinha = 'x';  
           eixoColuna = 'y'; 
         }
-
         selecaoAtual = {
           face: faceEixo,
           eixoLinha: eixoLinha,
@@ -165,13 +164,11 @@
         controls.enabled = true;
       }
     }
-
     function limparSelecaoVisual() {
       if (selecaoAtual && selecaoAtual.pecaAlvo) {
         selecaoAtual.pecaAlvo.material.forEach(mat => mat.emissive.setHex(0x000000));
       }
     }
-
     function onKeyDown(event) {
       if (!selecaoAtual || isMoving) return;
 
@@ -205,7 +202,6 @@
           pecasDaFatia.push(peca);
         }
       });
-
       rotateSlice(eixo, direcao);
     }
 
@@ -234,10 +230,8 @@
           finishedPieces.forEach(peca => {
             cuboMagico.attach(peca);
           });
-
           scene.remove(tempGroup);
           isMoving = false;
-
           limparSelecaoVisual();
           selecaoAtual = null;
           controls.enabled = true;
@@ -246,13 +240,11 @@
 
       animateSlice();
     }
-
     function onWindowResize() {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
-
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
