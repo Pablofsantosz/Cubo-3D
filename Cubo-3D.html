@@ -2,10 +2,11 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Cubo Mágico 3D</title>
+  <title>Cubo Mágico 3D - Linhas e Colunas</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #111; overflow: hidden; }
+    canvas:focus { outline: none; }
     canvas { display: block; }
     #info {
       position: absolute;
@@ -15,16 +16,23 @@
       color: #fff;
       font-family: 'Segoe UI', sans-serif;
       font-size: 15px;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 8px 20px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 22px;
       border-radius: 8px;
       text-align: center;
       pointer-events: none;
+      user-select: none;
+      line-height: 1.4;
+      z-index: 10;
     }
   </style>
 </head>
 <body>
-  <div id="info">Cubo Mágico 3D - Clique nas fatias para girar</div>
+  <div id="info">
+    1. Clique em uma peça para selecionar a interseção<br>
+    2. Setas <b>Esquerda/Direita</b> giram a <b>Linha</b><br>
+    3. Setas <b>Cima/Baixo</b> giram a <b>Coluna</b>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -34,6 +42,9 @@
     let cuboMagico;
     let raycaster, mouse;
     let isMoving = false;
+
+    let selecaoAtual = null; 
+    let pecasDaFatia = [];       
 
     init();
     animate();
@@ -50,6 +61,8 @@
       renderer.setClearColor(0x111111);
       document.body.appendChild(renderer.domElement);
 
+      renderer.domElement.setAttribute('tabindex', '0');
+
       const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.8);
       scene.add(luzAmbiente);
 
@@ -63,7 +76,8 @@
       criarCuboMagico();
 
       window.addEventListener('resize', onWindowResize);
-      window.addEventListener('click', onCubeClick);
+      renderer.domElement.addEventListener('click', onCubeClick);
+      renderer.domElement.addEventListener('keydown', onKeyDown);
     }
 
     function criarCuboMagico() {
@@ -73,29 +87,23 @@
       const geometria = new THREE.BoxGeometry(0.95, 0.95, 0.95);
       const espacamento = 1.05;
 
-      const matPreto = new THREE.MeshLambertMaterial({ color: 0x000000 });
-
-      const matDireita  = new THREE.MeshLambertMaterial({ color: 0xC41E3A }); 
-      const matEsquerda = new THREE.MeshLambertMaterial({ color: 0xFF5800 }); 
-      const matCima     = new THREE.MeshLambertMaterial({ color: 0xFFFFFF }); 
-      const matBaixo    = new THREE.MeshLambertMaterial({ color: 0xFFD500 }); 
-      const matFrente   = new THREE.MeshLambertMaterial({ color: 0x009E60 }); 
-      const matTras     = new THREE.MeshLambertMaterial({ color: 0x0051BA }); 
+      const colours = [
+        0xC41E3A, // Vermelho
+        0xFF5800, // Laranja
+        0xFFFFFF, // Branco
+        0xFFD500, // Amarelo
+        0x009E60, // Verde
+        0x0051BA  //zul
+      ];
+      
+      const cubeMaterials = colours.map(c => new THREE.MeshLambertMaterial({ color: c }));
 
       for (let x = -1; x <= 1; x++) {
         for (let y = -1; y <= 1; y++) {
           for (let z = -1; z <= 1; z++) {
-            
-            const materiaisPeca = [
-              x === 1 ? matDireita : matPreto,
-              x === -1 ? matEsquerda : matPreto,
-              y === 1 ? matCima : matPreto,
-              y === -1 ? matBaixo : matPreto,
-              z === 1 ? matFrente : matPreto,
-              z === -1 ? matTras : matPreto
-            ];
+            if (x === 0 && y === 0 && z === 0) continue;
 
-            const peca = new THREE.Mesh(geometria, materiaisPeca);
+            const peca = new THREE.Mesh(geometria, cubeMaterials);
             peca.position.set(x * espacamento, y * espacamento, z * espacamento);
             cuboMagico.add(peca);
           }
@@ -106,54 +114,121 @@
     function onCubeClick(event) {
       if (isMoving) return;
 
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      renderer.domElement.focus();
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      
+      // PARÊNTESE CORRIGIDO NESSA LINHA ABAIXO:
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(cuboMagico.children);
 
       if (intersects.length > 0) {
+        limparSelecaoVisual();
+
         const targetPiece = intersects[0].object;
-        const normal = intersects[0].face.normal; 
+        const normalGlobal = intersects[0].face.normal.clone().applyQuaternion(targetPiece.quaternion);
 
-        let axis = 'y'; 
-        if (Math.abs(normal.x) > 0.9) axis = 'x';
-        if (Math.abs(normal.z) > 0.9) axis = 'z';
+        let faceEixo = 'y';
+        if (Math.abs(normalGlobal.x) > 0.9) faceEixo = 'x';
+        if (Math.abs(normalGlobal.z) > 0.9) faceEixo = 'z';
 
-        rotateSlice(axis, targetPiece.position[axis]);
+        let eixoLinha, eixoColuna;
+        if (faceEixo === 'y') {
+          eixoLinha = 'z';  
+          eixoColuna = 'x'; 
+        } else if (faceEixo === 'x') {
+          eixoLinha = 'z';  
+          eixoColuna = 'y'; 
+        } else {
+          eixoLinha = 'x';  
+          eixoColuna = 'y'; 
+        }
+
+        selecaoAtual = {
+          face: faceEixo,
+          eixoLinha: eixoLinha,
+          valLinha: Math.round(targetPiece.position[eixoLinha] * 100) / 100,
+          eixoColuna: eixoColuna,
+          valColuna: Math.round(targetPiece.position[eixoColuna] * 100) / 100,
+          pecaAlvo: targetPiece
+        };
+
+        targetPiece.material.forEach(mat => mat.emissive.setHex(0x444444));
+
+        controls.enabled = false; 
+      } else {
+        limparSelecaoVisual();
+        selecaoAtual = null;
+        controls.enabled = true;
       }
     }
 
-    function rotateSlice(axis, layerValue) {
+    function limparSelecaoVisual() {
+      if (selecaoAtual && selecaoAtual.pecaAlvo) {
+        selecaoAtual.pecaAlvo.material.forEach(mat => mat.emissive.setHex(0x000000));
+      }
+    }
+
+    function onKeyDown(event) {
+      if (!selecaoAtual || isMoving) return;
+
+      let eixoGiro, valorCamada, direcaoGiro;
+
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        eixoGiro = selecaoAtual.eixoColuna; 
+        valorCamada = selecaoAtual.valColuna;
+        direcaoGiro = (event.key === 'ArrowRight') ? 1 : -1;
+        
+        if (selecaoAtual.face === 'y') direcaoGiro *= -1;
+
+        buscarEDispararGiro(eixoGiro, valorCamada, direcaoGiro);
+      } 
+      else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        eixoGiro = selecaoAtual.eixoLinha;
+        valorCamada = selecaoAtual.valLinha;
+        direcaoGiro = (event.key === 'ArrowUp') ? 1 : -1;
+
+        buscarEDispararGiro(eixoGiro, valorCamada, direcaoGiro);
+      }
+    }
+
+    function buscarEDispararGiro(eixo, camada, direcao) {
+      pecasDaFatia = [];
+      cuboMagico.children.forEach(peca => {
+        const currentPos = Math.round(peca.position[eixo] * 100) / 100;
+        if (currentPos === camada) {
+          pecasDaFatia.push(peca);
+        }
+      });
+
+      rotateSlice(eixo, direcao);
+    }
+
+    function rotateSlice(axis, direcao) {
       isMoving = true;
       const tempGroup = new THREE.Group();
       scene.add(tempGroup);
 
-      const targetLayer = Math.round(layerValue * 100) / 100;
-
-      const piecesToRotate = [];
-      cuboMagico.children.forEach(peca => {
-        const currentPos = Math.round(peca.position[axis] * 100) / 100;
-        if (currentPos === targetLayer) {
-          piecesToRotate.push(peca);
-        }
-      });
-
-      piecesToRotate.forEach(peca => {
+      pecasDaFatia.forEach(peca => {
         tempGroup.attach(peca);
       });
 
       let currentRotation = 0;
-      const targetRotation = Math.PI / 2;
+      const targetRotation = Math.PI / 2; 
       const step = 0.08;
 
       function animateSlice() {
         if (currentRotation < targetRotation) {
-          tempGroup.rotation[axis] += step;
+          tempGroup.rotation[axis] += step * direcao;
           currentRotation += step;
           requestAnimationFrame(animateSlice);
         } else {
-          tempGroup.rotation[axis] = targetRotation;
+          tempGroup.rotation[axis] = targetRotation * direcao;
 
           const finishedPieces = [...tempGroup.children];
           finishedPieces.forEach(peca => {
@@ -162,6 +237,10 @@
 
           scene.remove(tempGroup);
           isMoving = false;
+
+          limparSelecaoVisual();
+          selecaoAtual = null;
+          controls.enabled = true;
         }
       }
 
