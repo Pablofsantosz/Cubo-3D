@@ -29,6 +29,7 @@
 </head>
 <body>
   <div id="info">
+     <div id="contador">Movimentos: 0</div>
     1. Clique em uma peça para selecionar a interseção<br>
     2. Setas <b>Esquerda/Direita</b> giram a <b>Linha</b><br>
     3. Setas <b>Cima/Baixo</b> giram a <b>Coluna</b>
@@ -42,10 +43,15 @@
     let cuboMagico;
     let raycaster, mouse;
     let isMoving = false;
+    let movimentos = 0; 
 
     let selecaoAtual = null; 
     let pecasDaFatia = [];       
 
+    function atualizarContador() {
+    document.getElementById("contador").innerText =
+    "Movimentos: " + movimentos;
+}
     init();
     animate();
 
@@ -213,6 +219,10 @@
 
     function rotateSlice(axis, direcao) {
       isMoving = true;
+
+      movimentos++;
+      atualizarContador();
+
       const tempGroup = new THREE.Group();
       scene.add(tempGroup);
 
