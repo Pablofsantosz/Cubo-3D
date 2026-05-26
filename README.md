@@ -51,3 +51,39 @@ A versão anterior capturava as coordenadas do momento em que o mouse era pressi
 1. **Fim da Ambiguidade:** Em um espaço 3D, converter um movimento retilíneo 2D (mouse na tela) para uma rotação volumétrica costuma ser confuso dependendo do ângulo da câmera. A nova versão elimina esse erro: o usuário marca um pivô com maior precisão (clique) e ordena a ação (setas para linha ou coluna).
 2. **Conflito com o `OrbitControls`:** O método antigo frequentemente causava conflitos onde o usuário tentava girar a fatia do cubo e acabava girando a câmera inteira. Agora, a separação de *estado* resolve isso: clicar na peça seleciona e desativa os controles da câmera; ao terminar a rotação (ou clicar no fundo para cancelar), a câmera é liberada novamente.
 3. **Feedback Visual:** A adição da função `limparSelecaoVisual()`, combinada à seleção atual, providencia uma experiência tátil, escurecendo sutilmente a peça alvo, algo que não existia na versão de arraste baseada em deltas matemáticos invisíveis ao usuário.
+
+##  4. Onde IA foi utilizada
+O uso de Inteligência Artificial Generativa foi integrado ao processo de desenvolvimento para solucionar desafios de lógica geométrica tridimensional e refatoração de código, agilizando a entrega das seguintes funcionalidades:
+
+1. **Cálculo da Lógica de Seleção de Peças por Camada:**
+   * **Como foi utilizada:** A IA auxiliou na modelagem matemática para filtrar quais das 27 peças pertenciam a uma fatia específica no momento do giro. A partir das coordenadas globais `(x, y, z)` dos cubinhos individuais, a IA sugeriu a lógica condicional exata para que a função `buscarEDispararGiro()` identificasse as 9 peças corretas que compartilhavam o mesmo plano, independentemente das rotações acumuladas na cena.
+
+2. **Gerenciamento de Matrizes de Rotação e Ciclo de Vida do `THREE.Group`:**
+   * **Como foi utilizada:** Um dos maiores desafios técnicos foi evitar que as peças saíssem de órbita ou ficassem desalinhadas após sucessivos giros de 90 graus. A IA foi utilizada para estruturar o fluxo da função `rotateSlice()`. Ela ajudou a projetar o algoritmo que:
+     1. Transfere temporariamente os cubinhos para um grupo pivô.
+     2. Realiza a interpolação suave do ângulo via `requestAnimationFrame`.
+     3. Atualiza as matrizes de transformação globais dos cubinhos (`mesh.updateMatrixWorld()`) antes de devolvê-los à cena principal, garantindo que o estado do cubo permanecesse consistente para os movimentos seguintes.
+
+3. **Refact de bugs**
+
+##  5. Responsabilidades de Cada Membro
+Com base no histórico de desenvolvimento e contribuições no repositório, as tarefas foram distribuídas da seguinte forma entre os integrantes do grupo:
+
+* **Pablo Felipe:**
+  * **Fundação do Projeto:** Inicialização do repositório, configuração dos pilares do Three.js e renderização do cenário básico.
+  * **Estrutura 3D:** Desenvolvimento da lógica e renderização do grid 3x3x3 composto pelos 27 cubinhos.
+  * **Controles & Regras:** Implementação do sistema de controle de rotação por setas de teclado e criação da funcionalidade de contabilização de movimentos.
+
+* **Vic Rocha:**
+  * **Estética e Iluminação:** Configuração do sistema de iluminação da cena e aplicação das cores iniciais nos cubinhos.
+  * **Interação com Mouse:** Desenvolvimento do rastreamento de posição do mouse e primeira lógica de movimentação de faces.
+
+* **Pedro Alves:**
+  * **Câmera Orbital:** Implementação e ajuste da câmera funcional para navegação e visualização em 360 graus.
+  * **Otimização Visual:** Desenvolvimento e refatoração da lógica para pintar de preto as faces internas/não visíveis do cubo mágico.
+  * **Gerenciamento do Repositório:** Revisão de código e integração (*merge*) de funcionalidades ramificadas (*branches*).
+
+* **Lucas Ribeiro d'Azevedo:**
+  * **Refinamento de Rotação:** Correções e ajustes finos na física e animação de rotação do cubo.
+  * **Experiência do Usuário (UX):** Adição de linhas e colunas guia para facilitar a noção espacial e a percepção de movimento das seções do cubo.
+  * **Refatoração:** Limpeza de código, remoção de comentários obsoletos e padronização do espaçamento.
